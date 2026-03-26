@@ -1,0 +1,3 @@
+Blog Post Manager is a frontend React application built using Vite and Tailwind CSS that demonstrates CRUD (Create, Read, Update, Delete) operations by integrating with the JSONPlaceholder API.
+
+The application allows users to fetch posts, add new posts, edit existing ones, and delete posts in a clean and responsive UI. Axios is used for handling API requests, and the project follows a modular component-based architecture.
