@@ -1,45 +1,101 @@
-import React, { useState } from "react";
-import { postData } from "../api/PostApi";
+import React, { useEffect, useState } from "react";
+import { postData, updateData } from "../api/PostApi";
 
-const Form = ({ data, setData }) => {
-    
-    const [addData, setAddData] = useState({
-        title: "",
-        body:"",
+const Form = ({ data, setData, updateDataApi, setUpdateDataApi }) => {
+  const [addData, setAddData] = useState({
+    title: "",
+    body: "",
+  });
+
+  // updateDataApi is empty initially, if user clicks on edit then that particular data ie curEle gets added to it
+  let isEmpty = Object.keys(updateDataApi).length === 0;
+
+  // get the data that needs to be edited and adds into input field
+  useEffect(() => {
+    // if there is data that needs to be edited(in updateDataApi) then call setAddData which is initially empty and add/set the data into 'addData'(that needs to be edited) on to the input field
+    updateDataApi &&
+      setAddData({
+        title: updateDataApi.title || "",
+        body: updateDataApi.body || "",
+      });
+  }, [updateDataApi]);
+
+
+
+  const handleInputChange = e => {
+    const name = e.target.name;
+    const value = e.target.value;
+
+    setAddData(prev => {
+      // console.log(prev)
+      return {
+        ...prev,
+        [name]: value,
+      };
     });
+  };
 
-    const handleInputChange = (e) => {
-        const name = e.target.name;
-        const value = e.target.value;
+  // Function to post/send data to api
+  const addPostData = async () => {
+    const res = await postData(addData); //api call to post data in api
+    console.log("res", res);
 
-        setAddData((prev) => {
-            // console.log(prev)
-            return {
-                ...prev, [name]:value,
-            }  
-        })
+    // if res is succesfull
+    if (res.status === 201) {
+      setData([...data, res.data]);        //set and send/post the data
+      setAddData({ title: "", body: "" }); //empty's input filed
+    }
+  };
+
+
+  // Function to Update post data
+  const updatePostData = async () => {
+    try {
+      // pass which id needs to be edited(1st arg) and what data to be edited/updated(2nd arg) ie we get it from updateDataApi
+      const res = await updateData(updateDataApi.id, addData); //api call to update data
+      console.log(res); //(100) [{…}, {…}, {…}..]
+
+      if (res.status === 200) {
+        // to update in UI
+        setData(prev => {
+          //console.log(prev); //original old data-> (100) [{…}, {…}..]
+          return prev.map(curEle => {
+            // if elements id is equal to id of response data's id(i.e edit post id) then update only that post(i.e. update it with-> res.data), else keep curr elements as it is
+            return curEle.id === updateDataApi.id ? res.data : curEle;
+          });
+        });
+
+        setAddData({ title: "", body: "" }); //empty's input filed
+        setUpdateDataApi({}); //make this empty(edit filed empty)(isEmpty==0(true) button chnges back to "Add")
+      }
+      
+    }
+    catch (error) {
+      console.log(error)
     }
 
-    // function to post/send data to api
-    const addPostData = async () => {
-        const res = await postData(addData); //api call to post data in api
-        console.log("res", res);
+  }
 
-        if (res.status === 201) {
-            setData([...data, res.data]);
-            setAddData({ title: "", body: "" });
-        } 
+
+  // Form submission
+  const handleFormSubmit = e => {
+    e.preventDefault();
+
+    // this action gets the current value of submit button
+    const action = e.nativeEvent.submitter.value;
+    if (action === "Add") {
+      addPostData();
+    } else if (action === "Edit") {
+      updatePostData();
     }
-    
-    // form submission
-    const handleFormSubmit = (e) => {
-        e.preventDefault();
-        addPostData(); 
-    }
+  };
 
   return (
     <div className="flex justify-center px-3 py-6">
-      <form onSubmit={handleFormSubmit} className="w-full max-w-sm bg-gray-900 border border-gray-700 rounded-xl p-4 space-y-4 shadow-md">
+      <form
+        onSubmit={handleFormSubmit}
+        className="w-full max-w-sm bg-gray-900 border border-gray-700 rounded-xl p-4 space-y-4 shadow-md"
+      >
         {/* Heading */}
         <h2 className="text-lg font-semibold text-white text-center">
           Add Post
@@ -81,8 +137,9 @@ const Form = ({ data, setData }) => {
         <button
           type="submit"
           className="w-full bg-indigo-500 text-white py-1.5 text-sm rounded-md hover:bg-indigo-600 transition"
+          value={isEmpty ? "Add" : "Edit"}
         >
-          Add
+          {isEmpty ? "Add" : "Edit"}
         </button>
       </form>
     </div>
