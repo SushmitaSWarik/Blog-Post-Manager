@@ -1,11 +1,16 @@
 import React, { useEffect, useState } from "react";
 import { postData, updateData } from "../api/PostApi";
+import { toast } from "react-toastify";
 
 const Form = ({ data, setData, updateDataApi, setUpdateDataApi }) => {
   const [addData, setAddData] = useState({
     title: "",
     body: "",
   });
+
+  // Form validation state
+  const [formError, setFormError] = useState("");
+
 
   // updateDataApi is empty initially, if user clicks on edit then that particular data ie curEle gets added to it
   let isEmpty = Object.keys(updateDataApi).length === 0;
@@ -35,28 +40,33 @@ const Form = ({ data, setData, updateDataApi, setUpdateDataApi }) => {
     });
   };
 
-  // Function to post/send data to api
+  // Function to Post/send data to api
   const addPostData = async () => {
-    const res = await postData(addData); //api call to post data in api
-    console.log("res", res);
+    try {
+      const res = await postData(addData); //api call to post data in api
+      console.log("res", res);
 
-    // if res is succesfull
-    if (res.status === 201) {
-      setData([...data, res.data]);        //set and send/post the data
-      setAddData({ title: "", body: "" }); //empty's input filed
+      // if res is succesfull
+      if (res.status === 201) {
+        setData([...data, res.data]); //set and send/post the data
+        setAddData({ title: "", body: "" }); //empty's input filed
+
+        toast.success("Post added successfully ");
+      }
+    } catch (error) {
+      toast.error("Failed to add post ");
     }
   };
 
 
-  // Function to Update post data
+  // Function to UPDATE post data
   const updatePostData = async () => {
     try {
       // pass which id needs to be edited(1st arg) and what data to be edited/updated(2nd arg) ie we get it from updateDataApi
       const res = await updateData(updateDataApi.id, addData); //api call to update data
       console.log(res); //(100) [{…}, {…}, {…}..]
 
-      if (res.status === 200) {
-        // to update in UI
+      if (res.status === 200) {// to update in UI
         setData(prev => {
           //console.log(prev); //original old data-> (100) [{…}, {…}..]
           return prev.map(curEle => {
@@ -67,11 +77,13 @@ const Form = ({ data, setData, updateDataApi, setUpdateDataApi }) => {
 
         setAddData({ title: "", body: "" }); //empty's input filed
         setUpdateDataApi({}); //make this empty(edit filed empty)(isEmpty==0(true) button chnges back to "Add")
+
+        toast.success("Post updated successfully"); 
       }
-      
     }
     catch (error) {
-      console.log(error)
+      console.log(error);
+      toast.error("Failed to update post ❌");
     }
 
   }
@@ -81,8 +93,17 @@ const Form = ({ data, setData, updateDataApi, setUpdateDataApi }) => {
   const handleFormSubmit = e => {
     e.preventDefault();
 
+    // validation
+     if (!addData.title || !addData.body) {
+       setFormError("All fields are required");
+       return;
+     } else {
+       setFormError("");
+     }
+
     // this action gets the current value of submit button
     const action = e.nativeEvent.submitter.value;
+
     if (action === "Add") {
       addPostData();
     } else if (action === "Edit") {
@@ -91,14 +112,14 @@ const Form = ({ data, setData, updateDataApi, setUpdateDataApi }) => {
   };
 
   return (
-    <div className="flex justify-center px-3 py-6">
+    <div className="flex justify-center px-3 py-4">
       <form
         onSubmit={handleFormSubmit}
-        className="w-full max-w-sm bg-gray-900 border border-gray-700 rounded-xl p-4 space-y-4 shadow-md"
+        className="w-full max-w-sm bg-gray-900 border border-gray-700 rounded-xl p-4 space-y-4 shadow-md mb-2"
       >
         {/* Heading */}
         <h2 className="text-lg font-semibold text-white text-center">
-          Add Post
+          { isEmpty ? "Add Post" : "Edit Post"}
         </h2>
 
         {/* Title */}
@@ -132,6 +153,11 @@ const Form = ({ data, setData, updateDataApi, setUpdateDataApi }) => {
             className="bg-gray-800 text-white px-3 py-1.5 text-sm rounded-md border border-gray-600 focus:outline-none focus:ring-1 focus:ring-indigo-500 resize-none"
           ></textarea>
         </div>
+
+        {/* Error Message - Validation */}
+        {formError && (
+          <p className="text-red-500 text-xs text-center">{formError}</p>
+        )}
 
         {/* Button */}
         <button
